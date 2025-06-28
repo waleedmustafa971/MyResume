@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waleed Mustafa - 3D Resume Car Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            color: white;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 300px;
+            z-index: 10;
+        }
+        
+        #info-panel h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        
+        #info-panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: normal;
+            color: #9ca3af;
+        }
+        
+        #info-panel p {
+            margin: 0;
+            font-size: 14px;
+        }
+        
+        #modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(20, 20, 40, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-width: 80%;
+            width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            color: white;
+            z-index: 100;
+        }
+        
+        #modal-content h2 {
+            margin-top: 0;
+            color: #818cf8;
+            border-bottom: 2px solid #818cf8;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        #modal-content h3 {
+            font-size: 1.1em;
+            color: #a5b4fc;
+            margin-top: 20px;
+        }
+        
+        #modal-content p,
+        #modal-content ul {
+            line-height: 1.6;
+        }
+        
+        #modal-content ul {
+            padding-left: 20px;
+        }
+        
+        #close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        #controls-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            text-align: right;
+            z-index: 10;
+        }
+        
+        #interaction-prompt {
+            display: none;
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            border: 1px solid white;
+            z-index: 10;
+        }
+        
+        #auto-drive-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: background-color 0.3s;
+        }
+        
+        #auto-drive-btn:hover {
+            background-color: #6366f1;
+        }
+        
+        .verification-badge {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div id="info-panel">
+        <h1>Waleed Mustafa <span class="verification-badge" title="Verified Profile">✓</span></h1>
+        <h2>Software Developer | B.Eng in Information Technology</h2>
+        <p>Dubai, United Arab Emirates</p>
+    </div>
+
+    <div id="controls-info">
+        <b>Controls:</b><br>
+        <b>Accelerate:</b> W or Up Arrow<br>
+        <b>Brake/Reverse:</b> S or Down Arrow<br>
+        <b>Steer:</b> A/D or Left/Right Arrows<br>
+        <b>Interact:</b> E
+    </div>
+
+    <button id="auto-drive-btn">Start Auto-Drive</button>
+    <div id="interaction-prompt">Press 'E' to view details</div>
+
+    <div id="modal">
+        <button id="close-modal">&times;</button>
+        <div id="modal-content"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- DATA ---
+        const resumeData = {
+            summary: "At FocalSoft IT Solution, I've advanced the development of critical software products, leveraging my full-stack capabilities. With a B.Eng in Information Technology, my expertise spans creation and maintenance of dynamic platforms. Driven by a passion for data-driven solutions, I've applied my skills in analytics and database design to optimize client services.",
+            experience: [{
+                company: "FocalSoft IT Solution",
+                role: "Software Developer",
+                period: "Sep 2022 - Present",
+                description: "As a software developer, I am responsible for the company's software assets and products, contributing to all phases of the development lifecycle."
+            }, {
+                company: "Riwaq for educational services",
+                role: "Full-stack Developer",
+                period: "Oct 2020 - May 2022",
+                description: "Responsible for working on both front-end and back-end development processes. My tasks included:<ul><li>Designing, developing, and maintaining fully-fledged and functioning platforms with databases or servers.</li><li>Using multiple web development technologies to build robust solutions.</li><li>Providing detailed reports and documentation for projects.</li></ul>"
+            }, {
+                company: "AZ Tech",
+                role: "Data Analyst",
+                period: "Aug 2020 - Oct 2020",
+                description: "Collected, organised and interpreted statistical information to help colleagues and clients use it make decisions."
+            }, {
+                company: "Red-Sea International",
+                role: "Software Engineer",
+                period: "Sep 2019 - Sep 2020",
+                description: "Applied engineering principles to software development. My role included analysing and modifying existing software as well as designing, constructing and testing end-user applications that meet user needs — all through software programming languages."
+            }, ],
+            education: {
+                institution: "Karary University",
+                degree: "Bachelor of Engineering - BE, Information Technology",
+                period: "2014 - 2018",
+                grade: "Second Class (Honor)"
+            },
+            skills: ["JavaScript", "React.js", "PHP", "Laravel", "Python", "Flask", "MySQL", "Bootstrap", "Webflow", "Data Analysis", "Critical Thinking", "Problem Solving"],
+            projects: [{
+                name: "Zenoxy DigiHealth",
+                description: "An online medical platform providing health-related services from booking appointments to online video consultations, patient records, and an online pharmacy. Associated with FocalSoft IT Solution.",
+                skills: "PHP, Laravel, MySQL"
+            }, {
+                name: "SocialMedia Platform",
+                description: "An ongoing Reddit-style social media platform with communities, posts, replies, up/down-voting, DMs, and profiles. (80% complete).",
+                skills: "PHP, Laravel, Livewire, Alpine.js"
+            }, {
+                name: "Employee ERM System",
+                description: "A React-based solution to centralize employee information, organize departments, and implement role-based access for streamlined workforce management.",
+                skills: "React.js, Bootstrap 5"
+            }, {
+                name: "Sleep Quality Analysis Dashboard",
+                description: "An interactive web app analyzing how lifestyle factors impact sleep quality using the Sleep Health and Lifestyle Dataset, built with Python, Pandas, and Streamlit.",
+                skills: "Python, Pandas, Streamlit"
+            }, ]
+        };
+
+        // --- 3D SCENE SETUP ---
+        let scene, camera, renderer;
+        const interactiveObjects = [];
+        let car;
+        const clock = new THREE.Clock();
+
+        // Auto-drive variables
+        let isAutoDriving = false;
+        let autoDrivePath;
+        let autoDriveProgress = 0;
+        const autoDriveSpeed = 0.015; // Speed of auto-drive
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111827);
+            scene.fog = new THREE.Fog(0x111827, 50, 200);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            renderer = new THREE.WebGLRenderer({
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(20, 50, 20);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            createCar();
+            createWorld();
+            createAutoDrivePath();
+
+            setupControls();
+
+            window.addEventListener('resize', onWindowResize, false);
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('auto-drive-btn').addEventListener('click', toggleAutoDrive);
+
+            animate();
+        }
+
+        function createCar() {
+            car = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0xdc2626,
+                roughness: 0.3,
+                metalness: 0.5
+            });
+            const bodyGeo = new THREE.BoxGeometry(2, 0.8, 4);
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.castShadow = true;
+            body.position.y = 0.4;
+            car.add(body);
+            const cabinGeo = new THREE.BoxGeometry(1.8, 0.7, 2.5);
+            const cabin = new THREE.Mesh(cabinGeo, bodyMat);
+            cabin.position.set(0, 1.15, -0.2);
+            cabin.castShadow = true;
+            car.add(cabin);
+            const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.2, 32);
+            const wheelMat = new THREE.MeshStandardMaterial({
+                color: 0x171717,
+                roughness: 0.8
+            });
+            const wheelPositions = [{
+                x: 1.1,
+                y: -0.1,
+                z: 1.5
+            }, {
+                x: -1.1,
+                y: -0.1,
+                z: 1.5
+            }, {
+                x: 1.1,
+                y: -0.1,
+                z: -1.5
+            }, {
+                x: -1.1,
+                y: -0.1,
+                z: -1.5
+            }];
+            wheelPositions.forEach(pos => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.position.set(pos.x, pos.y, pos.z);
+                wheel.castShadow = true;
+                car.add(wheel);
+            });
+            car.position.set(0, 0.5, 5); // Start closer to the camera
+            scene.add(car);
+        }
+
+        function createWorld() {
+            const groundGeo = new THREE.PlaneGeometry(500, 500);
+            const groundMat = new THREE.MeshStandardMaterial({
+                color: 0x374151,
+                roughness: 0.9
+            });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            const roadGeo = new THREE.PlaneGeometry(10, 400);
+            const roadMat = new THREE.MeshStandardMaterial({
+                color: 0x52525b,
+                roughness: 0.8
+            });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            road.position.y = 0.01;
+            road.receiveShadow = true;
+            scene.add(road);
+
+            const sectionSpacing = 35;
+
+            addObject({
+                geometry: new THREE.IcosahedronGeometry(2, 0),
+                material: new THREE.MeshStandardMaterial({
+                    color: 0x818cf8,
+                    emissive: 0x4f46e5,
+                    roughness: 0.4
+                }),
+                position: new THREE.Vector3(8, 2, -sectionSpacing),
+                data: {
+                    type: 'summary',
+                    title: 'About Me',
+                    content: resumeData.summary
+                },
+                label: "About Me"
+            });
+
+            addObject({
+                geometry: new THREE.OctahedronGeometry(2, 0),
+                material: new THREE.MeshStandardMaterial({
+                    color: 0xc084fc,
+                    emissive: 0x9333ea,
+                    roughness: 0.4
+                }),
+                position: new THREE.Vector3(-8, 2, -sectionSpacing * 2),
+                data: {
+                    type: 'education',
+                    title: 'Education',
+                    content: `<h3>${resumeData.education.degree}</h3><p><strong>${resumeData.education.institution}</strong></p><p><em>${resumeData.education.period}</em></p><p>Grade: ${resumeData.education.grade}</p>`
+                },
+                label: "Education"
+            });
+
+            resumeData.experience.forEach((exp, i) => {
+                addObject({
+                    geometry: new THREE.BoxGeometry(2, 4, 2),
+                    material: new THREE.MeshStandardMaterial({
+                        color: 0x34d399,
+                        emissive: 0x059669,
+                        roughness: 0.5
+                    }),
+                    position: new THREE.Vector3(i % 2 === 0 ? 8 : -8, 2, -sectionSpacing * (3 + i)),
+                    data: {
+                        type: 'experience',
+                        title: exp.company,
+                        content: `<h3>${exp.role}</h3><p><em>${exp.period}</em></p>${exp.description}`
+                    },
+                    label: exp.company
+                });
+            });
+
+            const lastExpZ = -sectionSpacing * (3 + resumeData.experience.length - 1);
+
+            resumeData.projects.forEach((proj, i) => {
+                addObject({
+                    geometry: new THREE.CylinderGeometry(2, 2, 0.4, 32),
+                    material: new THREE.MeshStandardMaterial({
+                        color: 0x60a5fa,
+                        emissive: 0x2563eb,
+                        roughness: 0.6
+                    }),
+                    position: new THREE.Vector3(i % 2 === 0 ? -8 : 8, 1, lastExpZ - sectionSpacing * (i + 1.5)),
+                    data: {
+                        type: 'project',
+                        title: proj.name,
+                        content: `<p>${proj.description}</p><h3>Key Technologies:</h3><p>${proj.skills}</p>`
+                    },
+                    label: proj.name
+                });
+            });
+
+            const lastProjZ = lastExpZ - sectionSpacing * (resumeData.projects.length + 0.5);
+
+            const skillsRadius = 25;
+            const skillsCenterZ = lastProjZ - skillsRadius - sectionSpacing;
+
+            resumeData.skills.forEach((skill, i) => {
+                const angle = (i / resumeData.skills.length) * Math.PI * 2;
+                addObject({
+                    geometry: new THREE.SphereGeometry(1, 32, 16),
+                    material: new THREE.MeshStandardMaterial({
+                        color: 0xfb923c,
+                        emissive: 0xea580c,
+                        roughness: 0.3
+                    }),
+                    position: new THREE.Vector3(Math.cos(angle) * skillsRadius, 1.5, skillsCenterZ + Math.sin(angle) * skillsRadius),
+                    data: {
+                        type: 'skill',
+                        title: 'Skill',
+                        content: `<p>Proficient in <strong>${skill}</strong>.</p>`
+                    },
+                    label: skill
+                });
+            });
+        }
+
+        function createAutoDrivePath() {
+            const points = [new THREE.Vector3(0, 0.5, 5)];
+            interactiveObjects.sort((a, b) => b.position.z - a.position.z)
+                .forEach(obj => {
+                    const pos = obj.position;
+                    points.push(new THREE.Vector3(pos.x > 0 ? pos.x - 5 : pos.x + 5, 0.5, pos.z));
+                });
+            points.push(new THREE.Vector3(0, 0.5, points[points.length - 1].z - 30)); // Drive past the end a bit
+            autoDrivePath = new THREE.CatmullRomCurve3(points);
+        }
+
+        function addObject({
+            geometry,
+            material,
+            position,
+            data,
+            label
+        }) {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.copy(position);
+            mesh.castShadow = true;
+            mesh.userData = data;
+            scene.add(mesh);
+            interactiveObjects.push(mesh);
+            addTextToMesh(label, mesh, 0.3, mesh.geometry.parameters.height ? mesh.geometry.parameters.height + 0.2 : 2.5);
+        }
+
+        function addTextToMesh(text, mesh, size, yOffset = 1) {
+            const loader = new THREE.FontLoader();
+            loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', function(font) {
+                const textGeo = new THREE.TextGeometry(text, {
+                    font,
+                    size,
+                    height: 0.05
+                });
+                textGeo.computeBoundingBox();
+                const textMat = new THREE.MeshBasicMaterial({
+                    color: 0xffffff
+                });
+                const textMesh = new THREE.Mesh(textGeo, textMat);
+                textMesh.position.x = -textGeo.boundingBox.max.x / 2;
+                textMesh.position.y = yOffset;
+                mesh.add(textMesh);
+            });
+        }
+
+        const controls = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            interact: false
+        };
+        const carState = {
+            speed: 0,
+            steering: 0,
+            acceleration: 30,
+            braking: 50,
+            friction: 5,
+            maxSpeed: 100,
+            maxSteer: 0.8,
+            steerSpeed: 1.5
+        };
+
+        function setupControls() {
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+        }
+
+        function onKeyDown(event) {
+            if (isAutoDriving) {
+                if (event.code === 'KeyE') controls.interact = true;
+                return;
+            };
+            switch (event.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    controls.forward = true;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    controls.backward = true;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    controls.left = true;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    controls.right = true;
+                    break;
+                case 'KeyE':
+                    controls.interact = true;
+                    break;
+            }
+        }
+
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW':
+                case 'ArrowUp':
+                    controls.forward = false;
+                    break;
+                case 'KeyS':
+                case 'ArrowDown':
+                    controls.backward = false;
+                    break;
+                case 'KeyA':
+                case 'ArrowLeft':
+                    controls.left = false;
+                    break;
+                case 'KeyD':
+                case 'ArrowRight':
+                    controls.right = false;
+                    break;
+                case 'KeyE':
+                    controls.interact = false;
+                    break;
+            }
+        }
+
+        function updateCar(delta) {
+            if (isAutoDriving) return; // Manual controls handled here
+            let steerDirection = (controls.left ? 1 : 0) - (controls.right ? 1 : 0);
+            carState.steering += steerDirection * carState.steerSpeed * delta;
+            carState.steering = Math.max(-carState.maxSteer, Math.min(carState.maxSteer, carState.steering));
+            let acceleration = (controls.forward ? carState.acceleration : 0) - (controls.backward ? carState.braking : 0);
+            carState.speed += acceleration * delta;
+            carState.speed = Math.max(-carState.maxSpeed / 2, Math.min(carState.maxSpeed, carState.speed));
+            if (!controls.forward && !controls.backward) {
+                carState.speed *= (1 - carState.friction * delta);
+            }
+            if (Math.abs(carState.speed) < 0.1) carState.speed = 0;
+            carState.steering *= (1 - carState.steerSpeed * 2 * delta);
+            if (Math.abs(carState.steering) < 0.01) carState.steering = 0;
+            car.rotation.y += carState.steering * carState.speed * delta * 0.05;
+            car.translateZ(-carState.speed * delta);
+        }
+
+        function runAutoDrive(delta) {
+            if (!isAutoDriving) return;
+
+            autoDriveProgress += delta * autoDriveSpeed;
+            if (autoDriveProgress > 1) autoDriveProgress = 0; // Loop the drive
+
+            const newPos = autoDrivePath.getPointAt(autoDriveProgress);
+            car.position.copy(newPos);
+
+            // Look ahead on the path to orient the car
+            const lookAtPos = autoDrivePath.getPointAt((autoDriveProgress + 0.001) % 1);
+            car.lookAt(lookAtPos);
+        }
+
+        function updateCamera() {
+            const offset = new THREE.Vector3(0, 5, 10);
+            offset.applyQuaternion(car.quaternion);
+            offset.add(car.position);
+            camera.position.lerp(offset, 0.1);
+            camera.lookAt(car.position.clone().add(new THREE.Vector3(0, 1, 0)));
+        }
+
+        let nearbyObject = null;
+
+        function checkInteraction() {
+            const prompt = document.getElementById('interaction-prompt');
+            nearbyObject = null;
+            let closestDist = Infinity;
+            for (const obj of interactiveObjects) {
+                const dist = car.position.distanceTo(obj.position);
+                if (dist < 10 && dist < closestDist) {
+                    closestDist = dist;
+                    nearbyObject = obj;
+                }
+            }
+            if (nearbyObject) {
+                prompt.style.display = 'block';
+                if (controls.interact) {
+                    openModal(nearbyObject.userData);
+                    controls.interact = false;
+                }
+            } else {
+                prompt.style.display = 'none';
+            }
+        }
+
+        function openModal(data) {
+            if (isAutoDriving) isAutoDriving = false; // Pause on modal open
+            document.getElementById('modal-content').innerHTML = `<h2>${data.title}</h2>${data.content}`;
+            document.getElementById('modal').style.display = 'block';
+        }
+
+        function closeModal() {
+            const btn = document.getElementById('auto-drive-btn');
+            if (btn.textContent === "Stop Auto-Drive") isAutoDriving = true; // Resume on close
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function toggleAutoDrive() {
+            isAutoDriving = !isAutoDriving;
+            const btn = document.getElementById('auto-drive-btn');
+            if (isAutoDriving) {
+                // If starting auto-drive from manual, find closest point on path to start from
+                const closestPoint = autoDrivePath.getPointAt(getClosestPointOnPath(car.position));
+                autoDriveProgress = getClosestPointOnPath(closestPoint);
+                btn.textContent = "Stop Auto-Drive";
+            } else {
+                btn.textContent = "Start Auto-Drive";
+            }
+        }
+
+        function getClosestPointOnPath(position) {
+            let closestDistance = Infinity;
+            let closestProgress = 0;
+            for (let i = 0; i < 1; i += 0.001) {
+                const point = autoDrivePath.getPointAt(i);
+                const distance = position.distanceTo(point);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestProgress = i;
+                }
+            }
+            return closestProgress;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            updateCar(delta);
+            runAutoDrive(delta);
+            updateCamera();
+            checkInteraction();
+
+            interactiveObjects.forEach(obj => {
+                if (obj.children[0] && obj.children[0].isMesh) {
+                    obj.children[0].lookAt(camera.position);
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
