@@ -275,10 +275,11 @@
         // --- 3D SCENE SETUP ---
         let scene, camera, renderer;
         const interactiveObjects = [];
-        let car;
+        let car, portal;
         const clock = new THREE.Clock();
         
         let isAutoDriving = false;
+        let isRedirecting = false; // Flag to prevent multiple redirects
         let autoDrivePath;
         let autoDriveProgress = 0;
         const autoDriveSpeed = 0.015;
@@ -353,7 +354,7 @@
             ground.receiveShadow = true;
             scene.add(ground);
             
-            const roadGeo = new THREE.PlaneGeometry(10, 400);
+            const roadGeo = new THREE.PlaneGeometry(10, 500); // Extended road
             const roadMat = new THREE.MeshStandardMaterial({ color: 0x52525b, roughness: 0.8 });
             const road = new THREE.Mesh(roadGeo, roadMat);
             road.rotation.x = -Math.PI / 2;
@@ -401,6 +402,16 @@
                     position: new THREE.Vector3(Math.cos(angle) * skillsRadius, 1.5, skillsCenterZ + Math.sin(angle) * skillsRadius), data: { type: 'skill', title: 'Skill', content: `<p>Proficient in <strong>${skill}</strong>.</p>` }, label: skill
                 });
             });
+            
+            // Create LinkedIn Portal at the end
+            const portalZ = skillsCenterZ - skillsRadius - 30;
+            const portalGeo = new THREE.TorusGeometry(4, 0.5, 16, 100);
+            const portalMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, emissive: 0x0284c7, roughness: 0.2, metalness: 0.8 });
+            portal = new THREE.Mesh(portalGeo, portalMat);
+            portal.position.set(0, 4, portalZ);
+            portal.rotation.y = Math.PI / 2;
+            scene.add(portal);
+            addTextToMesh("LinkedIn Profile", portal, 0.5, 5);
         }
         
         function createAutoDrivePath() {
@@ -410,7 +421,7 @@
                 const pos = obj.position;
                 points.push(new THREE.Vector3(pos.x > 0 ? pos.x - 5 : pos.x + 5, 0.5, pos.z));
             });
-            points.push(new THREE.Vector3(0, 0.5, points[points.length-1].z - 30));
+            points.push(new THREE.Vector3(0, 0.5, portal.position.z)); // End path at the portal
             autoDrivePath = new THREE.CatmullRomCurve3(points);
         }
 
@@ -513,12 +524,22 @@
             if (!isAutoDriving) return;
             
             autoDriveProgress += delta * autoDriveSpeed;
-            if (autoDriveProgress > 1) autoDriveProgress = 0;
+
+            if (autoDriveProgress >= 1) {
+                autoDriveProgress = 1; // Clamp at the end
+                if (!isRedirecting) {
+                    isRedirecting = true;
+                    // Give a moment for the car to enter the portal visually
+                    setTimeout(() => {
+                        window.location.href = 'https://www.linkedin.com/in/waleed-mustafa-7b380917a/';
+                    }, 500);
+                }
+            }
 
             const newPos = autoDrivePath.getPointAt(autoDriveProgress);
             car.position.copy(newPos);
 
-            const lookAtPos = autoDrivePath.getPointAt((autoDriveProgress + 0.001) % 1);
+            const lookAtPos = autoDrivePath.getPointAt(Math.min(autoDriveProgress + 0.001, 1));
             car.lookAt(lookAtPos);
         }
         
@@ -567,10 +588,11 @@
         
         function toggleAutoDrive() {
             isAutoDriving = !isAutoDriving;
+            isRedirecting = false; // Reset redirect flag
             const btn = document.getElementById('auto-drive-btn');
             if (isAutoDriving) {
-                const closestPoint = autoDrivePath.getPointAt(getClosestPointOnPath(car.position));
-                autoDriveProgress = getClosestPointOnPath(closestPoint);
+                // If starting auto-drive from manual, find closest point on path to start from
+                autoDriveProgress = getClosestPointOnPath(car.position);
                 btn.textContent = "Stop Auto-Drive";
             } else {
                 btn.textContent = "Start Auto-Drive";
@@ -594,6 +616,10 @@
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
+            
+            if (portal) {
+                portal.rotation.x += 0.01; // Animate portal
+            }
             
             updateCar(delta);
             runAutoDrive(delta);
